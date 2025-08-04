@@ -1,0 +1,20 @@
+name: clutter6d
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - numpy
+  - scipy
+  - matplotlib
+  - pyyaml
+  - tqdm
+  - imageio
+  - scikit-image
+  - pillow
+  - opencv
+  - trimesh
+  - pip:
+    - blenderproc
+    - pyquaternion

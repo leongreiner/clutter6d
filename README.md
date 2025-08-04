@@ -1,30 +1,47 @@
-# clutter6d
+# Clutter6D: Synthetic Dataset Generation Pipeline
 
+A comprehensive pipeline for generating synthetic cluttered scenes with 6DoF pose annotations using BlenderProc and physics-based object placement.
 
+## Features
 
-## Getting started
+- **CAD Model Collection**: Support for GSO, Objaverse, and OmniObject3D models
+- **Physics-based Rendering**: Realistic object placement using BlenderProc physics simulation
+- **Scene Randomization**: Random object counts, class combinations, lighting, and camera poses
+- **Quality Controls**: Minimum visibility thresholds and class balancing
+- **Comprehensive Annotations**: Per-instance segmentation masks and 6DoF poses
+- **Reproducible**: Metadata logging with random seeds for reproducibility
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Installation
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+```bash
+# Create conda environment
+conda env create -f environment.yml
 
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+# Activate environment  
+conda activate clutter6d
 ```
-cd existing_repo
-git remote add origin https://gitlab.dlr.de/grei_lo/clutter6d.git
-git branch -M main
-git push -uf origin main
+
+## Quick Start
+
+1. **Activate the environment**:
+```bash
+conda activate clutter6d
 ```
 
-## Integrate with your tools
+2. **Configure the pipeline**:
+```bash
+python scripts/config_generator.py --output configs/default_config.yaml
+```
 
-- [ ] [Set up project integrations](https://gitlab.dlr.de/grei_lo/clutter6d/-/settings/integrations)
+3. **Generate synthetic dataset**:
+```bash
+python scripts/generate_dataset.py --config configs/default_config.yaml --output_dir data/synthetic
+```
 
-## Collaborate with your team
+4. **Visualize results**:
+```bash
+python scripts/visualize_results.py --data-dir data/synthetic --scene-id 0
+```
 
 - [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
 - [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
