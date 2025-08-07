@@ -114,3 +114,4 @@ __MACOSX/
 # custom
 job_logs/
 stuff/
+debug/
