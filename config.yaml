@@ -1,0 +1,15 @@
+# Paths
+models_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/3d_models"
+cc_textures_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/cctextures" 
+output_dir: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/di97jur/clutter6d/data" 
+
+# Scene generation parameters
+num_scenes: 3  
+models_per_scene: 15
+
+# Instance parameters
+max_instances_per_object: 10  # Maximum number of instances (hard cap)
+
+# Poisson distribution parameters for instance selection
+poisson_lambda: 3.5 # Lambda parameter (rate), lower values favor fewer instances
+poisson_shift: -2
