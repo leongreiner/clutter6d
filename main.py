@@ -2,12 +2,9 @@ import blenderproc as bproc
 import argparse
 import os
 import sys
-import shutil
 import numpy as np
 import glob
 import random
-import hashlib
-import logging
 import yaml
 from tqdm import tqdm
 
@@ -35,6 +32,7 @@ instance_values, instance_probs = create_trunc_poisson_pmf(
 )
 
 bproc.init()
+bproc.camera.set_resolution(config['resolution'][0], config['resolution'][1])
 
 def load_model_paths():
     models_path = config['models_path']
@@ -105,11 +103,10 @@ def load_random_models(all_models, num_models):
             max_dim = max(dimensions)
             if abs(max_dim - 1.0) > 0.0001:
                 print(f"Model is not normalized, scaling to 0.15m size! max_dim = {max_dim}")
-
-            target_size = 0.15  # Fixed size of 15cm for all objects; mm -> m
-            scale_factor = target_size / max_dim if max_dim > 0 else target_size
-            
-            base_obj.set_scale([scale_factor, scale_factor, scale_factor])
+                # Normalize to unit size
+                normalize_factor = 1.0 / max_dim
+                base_obj.set_scale([normalize_factor, normalize_factor, normalize_factor])
+                print(f"  Loaded {source} model with original size {max_dim:.3f}m, normalized to unit size")
 
             # Set properties
             base_obj.set_cp("dataset_source", source)
@@ -123,11 +120,11 @@ def load_random_models(all_models, num_models):
             category = get_category(model_path)
             name = get_name(model_path)
             base_obj.set_cp("category", category)
-            base_obj.set_cp("name", name)
+            base_obj.set_cp("model_name", name)
 
             # Choose number of instances using precomputed PMF
             num_instances = np.random.choice(instance_values, p=instance_probs)
-            print(f"  Creating {num_instances} instances of {source} model: {max_dim:.3f} -> {target_size:.3f}m (scale={scale_factor:.3f})")
+            print(f"  Creating {num_instances} instances of {source} model")
             
             # Create instances
             for instance_id in range(1, num_instances + 1):
@@ -183,12 +180,45 @@ for asset in tqdm(asset_names, desc="Loading CC textures", unit="texture", total
     )
     cc_textures.extend(mats)
 
+import time
+start = time.time()
+
 # Function samples 6-DoF poses - adjusted for properly sized objects
 def sample_pose_func(obj: bproc.types.MeshObject):
-    min = np.random.uniform([-0.4, -0.4, 0.0], [-0.2, -0.2, 0.0])
-    max = np.random.uniform([0.2, 0.2, 0.3], [0.4, 0.4, 0.5])
+    min = np.random.uniform([-config['position_sampling']['max_radius'], -config['position_sampling']['max_radius'], 0.0],
+                            [-config['position_sampling']['min_radius'], -config['position_sampling']['min_radius'], 0.0])
+    max = np.random.uniform([config['position_sampling']['min_radius'], config['position_sampling']['min_radius'], config['position_sampling']['min_height']], 
+                            [config['position_sampling']['max_radius'], config['position_sampling']['max_radius'], config['position_sampling']['max_height']])
     obj.set_location(np.random.uniform(min, max))
     obj.set_rotation_euler(bproc.sampler.uniformSO3())
+
+from blenderproc.python.utility.CollisionUtility import CollisionUtility
+from blenderproc.python.types.MeshObjectUtility import get_all_mesh_objects
+
+def sample_poses_skip_inside(objects_to_sample, sample_pose_func,
+                             objects_to_check_collisions=None, max_tries=1000):
+    if objects_to_check_collisions is None:
+        objects_to_check_collisions = get_all_mesh_objects()
+
+    # Only check collisions against already placed objects
+    objects_already = list(set(objects_to_check_collisions) - set(objects_to_sample))
+    bvh_cache = {}
+
+    for obj in objects_to_sample:
+        for _ in range(max_tries):
+            sample_pose_func(obj)
+            bvh_cache.pop(obj.get_name(), None)
+
+            # Skip the “inside” part of the test for all obstacles
+            no_collision = CollisionUtility.check_intersections(
+                obj,
+                bvh_cache,
+                objects_already,
+                list_of_objects_with_no_inside_check=objects_already
+            )
+            if no_collision:
+                break
+        objects_already.append(obj)
     
 bproc.renderer.enable_depth_output(activate_antialiasing=False)
 bproc.renderer.set_max_amount_of_samples(50)
@@ -196,17 +226,46 @@ bproc.renderer.set_max_amount_of_samples(50)
 print("Starting scene generation...")
 
 for i in range(config['num_scenes']):
+    
+    # Randomly select number of object classes and images for this scene
+    num_object_classes = np.random.randint(config['min_object_classes_per_scene'], 
+                                         config['max_object_classes_per_scene'] + 1)
+    num_images = np.random.randint(config['min_images_per_scene'], 
+                                 config['max_images_per_scene'] + 1)
+    
+    print(f"Scene {i+1}: {num_object_classes} object classes, {num_images} images")
 
-    scene_objects = load_random_models(all_model_paths, config['models_per_scene'])
+    scene_objects = load_random_models(all_model_paths, num_object_classes)
 
     if not scene_objects:
         print(f"No objects loaded for scene {i+1}, skipping...")
         continue
 
-    # Keep original GLB textures, no material randomization
-    for obj in scene_objects:        
+    # Generate random sizes for each unique object in this scene
+    # All instances of the same object have the same size
+    object_sizes = {}
+    for obj in scene_objects:
+        obj_id = obj.get_cp("obj_id")
+        if obj_id not in object_sizes:
+            # Generate random size for this object type in this scene
+            random_size = np.random.uniform(config['min_object_size'], config['max_object_size'])
+            object_sizes[obj_id] = random_size
+    # Apply the consistent size to all instances of each object
+    for obj in scene_objects:
+        obj_id = obj.get_cp("obj_id")
+        target_size = object_sizes.get(obj_id)
+        obj.set_scale([target_size, target_size, target_size])
+    print(f"Random object sizes for scene {i+1}:")
+    for obj_id, size in object_sizes.items():
+        print(f"  Object {obj_id}: {size:.3f}m")
+
+    # Keep original GLB textures, but apply material randomization
+    for obj in scene_objects:
+        # mat = obj.get_materials()[0]        
+        # mat.set_principled_shader_value("Roughness", np.random.uniform(0, 1.0))
+        # mat.set_principled_shader_value("Specular IOR Level", np.random.uniform(0, 1.0))
         obj.set_shading_mode('auto')
-        obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99, collision_shape='COMPOUND')
+        obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99, collision_shape='CONVEX_HULL')
         obj.hide(False)
     
     light_plane_material.make_emissive(emission_strength=np.random.uniform(3,6), 
@@ -227,14 +286,16 @@ for i in range(config['num_scenes']):
         obj_path = obj.get_cp("model_path") if obj.has_cp("model_path") else "unknown"
         obj_id = obj.get_cp("obj_id") if obj.has_cp("obj_id") else "unknown"
         instance_id = obj.get_cp("instance_id") if obj.has_cp("instance_id") else "unknown"
-        category = obj.get_cp("cat") if obj.has_cp("cat") else "unknown"
-        name = obj.get_cp("name") if obj.has_cp("name") else "unknown"
-        print(f"  {j+1:2d}. {obj.get_name()} (obj_id: {obj_id}, cat: {category}, name: {name}, instance: {instance_id}) -> {os.path.basename(obj_path)}")
+        category = obj.get_cp("category") if obj.has_cp("category") else "unknown"
+        name = obj.get_cp("model_name") if obj.has_cp("model_name") else "unknown"
+        assigned_size = object_sizes.get(obj_id, "unknown")
+        print(f"  {j+1:2d}. {obj.get_name()} (obj_id: {obj_id}, cat: {category}, name: {name}, instance: {instance_id}, size: {assigned_size:.3f}m) -> {os.path.basename(obj_path)}")
     
-    bproc.object.sample_poses(objects_to_sample = scene_objects,
-                            sample_pose_func = sample_pose_func, 
-                            max_tries = 1000)
-            
+    # bproc.object.sample_poses(objects_to_sample = scene_objects,
+    #                         sample_pose_func = sample_pose_func, 
+    #                         max_tries = 1000)
+    sample_poses_skip_inside(scene_objects, sample_pose_func, max_tries=500)
+        
     bproc.object.simulate_physics_and_fix_final_poses(min_simulation_time=3,
                                                     max_simulation_time=10,
                                                     check_object_interval=1,
@@ -245,15 +306,18 @@ for i in range(config['num_scenes']):
     bop_bvh_tree = bproc.object.create_bvh_tree_multi_objects(scene_objects)
 
     cam_poses = 0
-    while cam_poses < 25:
+    while cam_poses < num_images:
+
         # Camera positioning adjusted for smaller objects
         location = bproc.sampler.shell(center = [0, 0, 0],
-                                radius_min = 0.8,   # Increased minimum distance
-                                radius_max = 1.5,   # Adjusted maximum distance
+                                radius_min = 0.5,
+                                radius_max = 2.0,
                                 elevation_min = 5,
                                 elevation_max = 89)
-        if len(scene_objects) >= 3:
-            poi_objects = np.random.choice(scene_objects, size=min(15, len(scene_objects)), replace=False)
+        
+        # When there are at least 15 objects, compute POI from a random selection of 15 objects to get more varied camera viewpoints
+        if len(scene_objects) >= 15:
+            poi_objects = np.random.choice(scene_objects, size=15, replace=False)
             poi = bproc.object.compute_poi(poi_objects)
         else:
             poi = bproc.object.compute_poi(scene_objects)
@@ -270,7 +334,7 @@ for i in range(config['num_scenes']):
     bproc.writer.write_bop(os.path.join(config['output_dir'], 'bop_data'),
                            target_objects = scene_objects,
                            dataset = 'clutter6d',
-                           depth_scale = 1,
+                           depth_scale = 0.1,
                            depths = data["depth"],
                            colors = data["colors"], 
                            color_file_format = "JPEG",
@@ -279,3 +343,6 @@ for i in range(config['num_scenes']):
     for obj in scene_objects:      
         obj.disable_rigidbody()
         obj.hide(True)
+
+end = time.time()
+print(f"Scene generation completed in {end - start:.2f} seconds")

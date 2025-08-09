@@ -27,7 +27,7 @@ def get_obj_id(model_path):
     filename = os.path.basename(model_path)
     parts = filename.split('__', 1)
     if len(parts) == 2:
-        obj_id_part = parts[0]  # "obj_id_000123"
+        obj_id_part = parts[0]
         obj_id_str = obj_id_part.replace('obj_id_', '')
         obj_id = int(obj_id_str)
         return obj_id
@@ -42,5 +42,5 @@ def get_category(model_path):
 def get_name(model_path):
     filename = os.path.basename(model_path)
     name_without_ext = filename.replace('.glb', '').replace('.GLB', '')
-    cat_match = re.search(r'__cat_[^_]+(?:_[^_]+)*__(.+)', name_without_ext)
-    return cat_match.group(1)
+    name_match = re.search(r'__cat_[^_]+(?:_[^_]+)*__(.+)', name_without_ext)
+    return name_match.group(1)
