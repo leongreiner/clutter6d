@@ -48,12 +48,12 @@ def load_model_paths():
     all_models['objaverse'] = objaverse_models
     print(f"Found {len(objaverse_models)} Objaverse models")
     
-    obj3d_path = os.path.join(models_path, 'oo3d_simplified', '**', '*.glb')
-    obj3d_models = glob.glob(obj3d_path, recursive=True)
-    all_models['obj3d'] = obj3d_models
-    print(f"Found {len(obj3d_models)} OmniObject3D models")
+    oo3d_path = os.path.join(models_path, 'oo3d_simplified', '**', '*.glb')
+    oo3d_models = glob.glob(oo3d_path, recursive=True)
+    all_models['oo3d'] = oo3d_models
+    print(f"Found {len(oo3d_models)} OmniObject3D models")
     
-    total_models = len(gso_models) + len(objaverse_models) + len(obj3d_models)
+    total_models = len(gso_models) + len(objaverse_models) + len(oo3d_models)
     print(f"Total models available: {total_models}")
     
     return all_models
@@ -72,10 +72,15 @@ def load_random_models(all_models, num_models):
     
     all_instances = []
     max_instances = config['max_instances_per_object']
-    print(f"Loading {num_to_sample} random models with up to {max_instances} instances each...")
+    max_total_instances = config['max_total_instances']
+    total_instances_created = 0
+    print(f"Loading {num_to_sample} random models with up to {max_instances} instances each (max total: {max_total_instances})...")
     
     loaded_count = 0
     for i, (model_path, source) in enumerate(selected_models):
+        # Calculate how many base objects are still coming (including current one)
+        remaining_base_objects = num_to_sample - i
+        
         try:
             objects = bproc.loader.load_obj(model_path)
         except Exception as e:
@@ -123,8 +128,22 @@ def load_random_models(all_models, num_models):
             base_obj.set_cp("model_name", name)
 
             # Choose number of instances using precomputed PMF
-            num_instances = np.random.choice(instance_values, p=instance_probs)
-            print(f"  Creating {num_instances} instances of {source} model")
+            # But limit based on remaining total instance budget and remaining base objects
+            remaining_instances = max_total_instances - total_instances_created
+            
+            # Reserve at least 1 instance for each remaining base object (including this one)
+            instances_available_for_extras = remaining_instances - remaining_base_objects
+            
+            if instances_available_for_extras <= 0:
+                # Only room for base objects, no extra instances
+                num_instances = 1
+                print(f"  Creating 1 instance of {source} model (base only - reserving space for {remaining_base_objects-1} more base objects)")
+            else:
+                # Normal instance selection, but cap at available budget for extras + 1 base
+                desired_instances = np.random.choice(instance_values, p=instance_probs)
+                max_instances_for_this_object = min(desired_instances, instances_available_for_extras + 1)
+                num_instances = max_instances_for_this_object
+                print(f"  Creating {num_instances} instances of {source} model (total so far: {total_instances_created + num_instances}/{max_total_instances})")
             
             # Create instances
             for instance_id in range(1, num_instances + 1):
@@ -138,9 +157,9 @@ def load_random_models(all_models, num_models):
                 
                 # Initially hide all objects
                 instance_obj.hide(True)
-                instance_obj.disable_rigidbody()
                 
                 all_instances.append(instance_obj)
+                total_instances_created += 1
             
             # Clean up extra objects
             for extra_obj in valid_objects[1:]:
@@ -310,10 +329,10 @@ for i in range(config['num_scenes']):
 
         # Camera positioning adjusted for smaller objects
         location = bproc.sampler.shell(center = [0, 0, 0],
-                                radius_min = 0.5,
-                                radius_max = 2.0,
-                                elevation_min = 5,
-                                elevation_max = 89)
+                                radius_min = config['camera']['radius_min'],
+                                radius_max = config['camera']['radius_max'],
+                                elevation_min = config['camera']['elevation_min'],
+                                elevation_max = config['camera']['elevation_max'])
         
         # When there are at least 15 objects, compute POI from a random selection of 15 objects to get more varied camera viewpoints
         if len(scene_objects) >= 15:

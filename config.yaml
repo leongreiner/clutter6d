@@ -14,7 +14,8 @@ max_images_per_scene: 30 #35
 resolution: [640, 480] # Devidable by 14 for ViT backbone compatibility
 
 # Instance parameters
-max_instances_per_object: 10  # Maximum number of instances (hard cap)
+max_instances_per_object: 10  # Maximum number of instances per object (hard cap)
+max_total_instances: 40      # Maximum total instances across all objects in a scene
 
 # Poisson distribution parameters for instance selection
 poisson_lambda: 3.5 # Lambda parameter (rate), lower values favor fewer instances
@@ -22,7 +23,7 @@ poisson_shift: -2
 
 # Object size parameters
 min_object_size: 0.15
-max_object_size: 0.15
+max_object_size: 0.3
 
 # Object position sampling parameters
 position_sampling:
@@ -30,3 +31,10 @@ position_sampling:
   max_radius: 0.4  # Maximum radius from center for object placement
   min_height: 0.3  # Minimum height for object placement
   max_height: 0.5  # Maximum height for object placement
+
+# Camera parameters
+camera:
+  radius_min: 0.5    # Minimum distance from center for camera placement
+  radius_max: 2.0    # Maximum distance from center for camera placement
+  elevation_min: 5   # Minimum elevation angle in degrees
+  elevation_max: 89  # Maximum elevation angle in degrees
