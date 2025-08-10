@@ -254,6 +254,9 @@ for i in range(config['num_scenes']):
     
     print(f"Scene {i+1}: {num_object_classes} object classes, {num_images} images")
 
+    # Clear camera poses from previous scene
+    bproc.utility.reset_keyframes()
+
     scene_objects = load_random_models(all_model_paths, num_object_classes)
 
     if not scene_objects:
@@ -310,10 +313,7 @@ for i in range(config['num_scenes']):
         assigned_size = object_sizes.get(obj_id, "unknown")
         print(f"  {j+1:2d}. {obj.get_name()} (obj_id: {obj_id}, cat: {category}, name: {name}, instance: {instance_id}, size: {assigned_size:.3f}m) -> {os.path.basename(obj_path)}")
     
-    # bproc.object.sample_poses(objects_to_sample = scene_objects,
-    #                         sample_pose_func = sample_pose_func, 
-    #                         max_tries = 1000)
-    sample_poses_skip_inside(scene_objects, sample_pose_func, max_tries=500)
+    sample_poses_skip_inside(scene_objects, sample_pose_func, max_tries=1000)
         
     bproc.object.simulate_physics_and_fix_final_poses(min_simulation_time=3,
                                                     max_simulation_time=10,

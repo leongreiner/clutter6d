@@ -7,11 +7,11 @@ output_dir: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/di97jur/clutter6d/data"
 num_scenes: 3  
 min_object_classes_per_scene: 10
 max_object_classes_per_scene: 20
-min_images_per_scene: 20 #25
-max_images_per_scene: 30 #35
+min_images_per_scene: 25
+max_images_per_scene: 35
 
 # Render resolution
-resolution: [640, 480] # Devidable by 14 for ViT backbone compatibility
+resolution: [672, 448] # Devidable by 14 for ViT backbone compatibility
 
 # Instance parameters
 max_instances_per_object: 10  # Maximum number of instances per object (hard cap)
@@ -22,19 +22,19 @@ poisson_lambda: 3.5 # Lambda parameter (rate), lower values favor fewer instance
 poisson_shift: -2
 
 # Object size parameters
-min_object_size: 0.15
-max_object_size: 0.3
+min_object_size: 0.1
+max_object_size: 0.4
 
 # Object position sampling parameters
 position_sampling:
-  min_radius: 0.2  # Minimum radius from center for object placement
-  max_radius: 0.4  # Maximum radius from center for object placement
-  min_height: 0.3  # Minimum height for object placement
-  max_height: 0.5  # Maximum height for object placement
+  min_radius: 0.2  # Minimum radius
+  max_radius: 0.5  # Maximum radius 
+  min_height: 0.4  # Minimum height (minimum: max_object_size)
+  max_height: 0.6  # Maximum height
 
 # Camera parameters
 camera:
-  radius_min: 0.5    # Minimum distance from center for camera placement
+  radius_min: 0.7    # Minimum distance from center for camera placement
   radius_max: 2.0    # Maximum distance from center for camera placement
   elevation_min: 5   # Minimum elevation angle in degrees
   elevation_max: 89  # Maximum elevation angle in degrees
