@@ -200,7 +200,12 @@ for asset in tqdm(asset_names, desc="Loading CC textures", unit="texture", total
     cc_textures.extend(mats)
 
 import time
+import csv
+from datetime import datetime
 start = time.time()
+
+# Initialize report data structure
+run_report = []
 
 # Function samples 6-DoF poses - adjusted for properly sized objects
 def sample_pose_func(obj: bproc.types.MeshObject):
@@ -254,6 +259,21 @@ for i in range(config['num_scenes']):
     
     print(f"Scene {i+1}: {num_object_classes} object classes, {num_images} images")
 
+    # Initialize scene report data
+    scene_report = {
+        'scene_id': i + 1,
+        'num_object_classes': num_object_classes,
+        'num_images_planned': num_images,
+        'num_images_generated': 0,
+        'objects': [],
+        'object_sizes': {},
+        'cc_texture': '',
+        'light_emission_strength': 0,
+        'light_emission_color': [],
+        'light_point_color': [],
+        'light_point_location': []
+    }
+
     # Clear camera poses from previous scene
     bproc.utility.reset_keyframes()
 
@@ -277,6 +297,10 @@ for i in range(config['num_scenes']):
         obj_id = obj.get_cp("obj_id")
         target_size = object_sizes.get(obj_id)
         obj.set_scale([target_size, target_size, target_size])
+    
+    # Store object sizes in scene report
+    scene_report['object_sizes'] = object_sizes.copy()
+    
     print(f"Random object sizes for scene {i+1}:")
     for obj_id, size in object_sizes.items():
         print(f"  Object {obj_id}: {size:.3f}m")
@@ -290,28 +314,62 @@ for i in range(config['num_scenes']):
         obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99, collision_shape='CONVEX_HULL')
         obj.hide(False)
     
-    light_plane_material.make_emissive(emission_strength=np.random.uniform(3,6), 
-                                    emission_color=np.random.uniform([0.5, 0.5, 0.5, 1.0], [1.0, 1.0, 1.0, 1.0]))  
+    # Record lighting parameters
+    emission_strength = np.random.uniform(3,6)
+    emission_color = np.random.uniform([0.5, 0.5, 0.5, 1.0], [1.0, 1.0, 1.0, 1.0])
+    scene_report['light_emission_strength'] = emission_strength
+    scene_report['light_emission_color'] = emission_color.tolist()
+    
+    light_plane_material.make_emissive(emission_strength=emission_strength, 
+                                    emission_color=emission_color)  
     light_plane.replace_materials(light_plane_material)
-    light_point.set_color(np.random.uniform([0.5,0.5,0.5],[1,1,1]))
+    
+    point_light_color = np.random.uniform([0.5,0.5,0.5],[1,1,1])
+    scene_report['light_point_color'] = point_light_color.tolist()
+    light_point.set_color(point_light_color)
+    
     location = bproc.sampler.shell(center = [0, 0, 0], radius_min = 1, radius_max = 1.5,
                             elevation_min = 5, elevation_max = 89)
+    scene_report['light_point_location'] = location.tolist()
     light_point.set_location(location)
 
     random_cc_texture = np.random.choice(cc_textures)
+    # Store texture name in report
+    scene_report['cc_texture'] = random_cc_texture.get_name() if hasattr(random_cc_texture, 'get_name') else str(random_cc_texture)
     for plane in room_planes:
         plane.replace_materials(random_cc_texture)
 
     # Debug Printing
     print(f"Placing {len(scene_objects)} object instances in scene {i+1}:")
+    
+    # Track object instances for report
+    object_instance_counts = {}
+    
     for j, obj in enumerate(scene_objects):
         obj_path = obj.get_cp("model_path") if obj.has_cp("model_path") else "unknown"
         obj_id = obj.get_cp("obj_id") if obj.has_cp("obj_id") else "unknown"
         instance_id = obj.get_cp("instance_id") if obj.has_cp("instance_id") else "unknown"
         category = obj.get_cp("category") if obj.has_cp("category") else "unknown"
         name = obj.get_cp("model_name") if obj.has_cp("model_name") else "unknown"
+        dataset_source = obj.get_cp("dataset_source") if obj.has_cp("dataset_source") else "unknown"
         assigned_size = object_sizes.get(obj_id, "unknown")
+        
+        # Count instances per object
+        if obj_id not in object_instance_counts:
+            object_instance_counts[obj_id] = {
+                'count': 0,
+                'category': category,
+                'name': name,
+                'dataset_source': dataset_source,
+                'model_path': obj_path,
+                'size': assigned_size
+            }
+        object_instance_counts[obj_id]['count'] += 1
+        
         print(f"  {j+1:2d}. {obj.get_name()} (obj_id: {obj_id}, cat: {category}, name: {name}, instance: {instance_id}, size: {assigned_size:.3f}m) -> {os.path.basename(obj_path)}")
+    
+    # Store object data in scene report
+    scene_report['objects'] = object_instance_counts
     
     sample_poses_skip_inside(scene_objects, sample_pose_func, max_tries=1000)
         
@@ -348,6 +406,9 @@ for i in range(config['num_scenes']):
             bproc.camera.add_camera_pose(cam2world_matrix, frame=cam_poses)
             cam_poses += 1
 
+    # Record actual number of images generated
+    scene_report['num_images_generated'] = cam_poses
+    
     data = bproc.renderer.render()
 
     bproc.writer.write_bop(os.path.join(config['output_dir'], 'bop_data'),
@@ -362,6 +423,120 @@ for i in range(config['num_scenes']):
     for obj in scene_objects:      
         obj.disable_rigidbody()
         obj.hide(True)
+    
+    # Add scene report to run report
+    run_report.append(scene_report)
+    print(f"Scene {i+1} completed: {scene_report['num_images_generated']}/{scene_report['num_images_planned']} images generated")
 
+# Generate comprehensive report
 end = time.time()
-print(f"Scene generation completed in {end - start:.2f} seconds")
+total_runtime = end - start
+
+print(f"Scene generation completed in {total_runtime:.2f} seconds")
+
+# Create timestamp for report filename
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# Generate detailed CSV report
+report_filename = os.path.join(config['output_dir'], f'generation_report_{timestamp}.csv')
+with open(report_filename, 'w', newline='', encoding='utf-8') as csvfile:
+    fieldnames = [
+        'scene_id', 'num_object_classes', 'num_images_planned', 'num_images_generated',
+        'total_object_instances', 'cc_texture', 'light_emission_strength',
+        'light_emission_color_r', 'light_emission_color_g', 'light_emission_color_b', 'light_emission_color_a',
+        'light_point_color_r', 'light_point_color_g', 'light_point_color_b',
+        'light_point_location_x', 'light_point_location_y', 'light_point_location_z',
+        'object_data'  # Will contain detailed object information as JSON string
+    ]
+    
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    
+    for scene in run_report:
+        # Calculate total instances
+        total_instances = sum(obj_data['count'] for obj_data in scene['objects'].values())
+        
+        # Prepare object data as JSON string for CSV
+        import json
+        object_data_json = json.dumps(scene['objects'], indent=2)
+        
+        row = {
+            'scene_id': scene['scene_id'],
+            'num_object_classes': scene['num_object_classes'],
+            'num_images_planned': scene['num_images_planned'],
+            'num_images_generated': scene['num_images_generated'],
+            'total_object_instances': total_instances,
+            'cc_texture': scene['cc_texture'],
+            'light_emission_strength': scene['light_emission_strength'],
+            'light_emission_color_r': scene['light_emission_color'][0],
+            'light_emission_color_g': scene['light_emission_color'][1],
+            'light_emission_color_b': scene['light_emission_color'][2],
+            'light_emission_color_a': scene['light_emission_color'][3],
+            'light_point_color_r': scene['light_point_color'][0],
+            'light_point_color_g': scene['light_point_color'][1],
+            'light_point_color_b': scene['light_point_color'][2],
+            'light_point_location_x': scene['light_point_location'][0],
+            'light_point_location_y': scene['light_point_location'][1],
+            'light_point_location_z': scene['light_point_location'][2],
+            'object_data': object_data_json
+        }
+        writer.writerow(row)
+
+# Generate detailed text report
+text_report_filename = os.path.join(config['output_dir'], f'generation_report_{timestamp}.txt')
+with open(text_report_filename, 'w', encoding='utf-8') as f:
+    f.write("=" * 80 + "\n")
+    f.write("CLUTTER6D SCENE GENERATION REPORT\n")
+    f.write("=" * 80 + "\n\n")
+    
+    f.write(f"Generation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    f.write(f"Total Runtime: {total_runtime:.2f} seconds\n")
+    f.write(f"Configuration File: {args.config}\n")
+    f.write(f"Total Scenes Generated: {len(run_report)}\n\n")
+    
+    # Summary statistics
+    total_images_planned = sum(scene['num_images_planned'] for scene in run_report)
+    total_images_generated = sum(scene['num_images_generated'] for scene in run_report)
+    total_instances = sum(sum(obj_data['count'] for obj_data in scene['objects'].values()) for scene in run_report)
+    total_unique_objects = len(set(obj_id for scene in run_report for obj_id in scene['objects'].keys()))
+    
+    f.write("SUMMARY STATISTICS:\n")
+    f.write("-" * 40 + "\n")
+    f.write(f"Total Images Planned: {total_images_planned}\n")
+    f.write(f"Total Images Generated: {total_images_generated}\n")
+    f.write(f"Image Generation Success Rate: {(total_images_generated/total_images_planned*100):.1f}%\n")
+    f.write(f"Total Object Instances: {total_instances}\n")
+    f.write(f"Total Unique Objects Used: {total_unique_objects}\n\n")
+    
+    # Per-scene details
+    f.write("SCENE DETAILS:\n")
+    f.write("=" * 80 + "\n")
+    
+    for scene in run_report:
+        f.write(f"\nSCENE {scene['scene_id']}:\n")
+        f.write("-" * 40 + "\n")
+        f.write(f"Object Classes: {scene['num_object_classes']}\n")
+        f.write(f"Images Planned: {scene['num_images_planned']}\n")
+        f.write(f"Images Generated: {scene['num_images_generated']}\n")
+        f.write(f"CC Texture: {scene['cc_texture']}\n")
+        f.write(f"Light Emission Strength: {scene['light_emission_strength']:.3f}\n")
+        f.write(f"Light Emission Color (RGBA): {scene['light_emission_color']}\n")
+        f.write(f"Point Light Color (RGB): {scene['light_point_color']}\n")
+        f.write(f"Point Light Location (XYZ): {scene['light_point_location']}\n\n")
+        
+        f.write("Objects in Scene:\n")
+        for obj_id, obj_data in scene['objects'].items():
+            f.write(f"  - Object ID: {obj_id}\n")
+            f.write(f"    Name: {obj_data['name']}\n")
+            f.write(f"    Category: {obj_data['category']}\n")
+            f.write(f"    Dataset Source: {obj_data['dataset_source']}\n")
+            f.write(f"    Instances: {obj_data['count']}\n")
+            f.write(f"    Size: {obj_data['size']:.3f}m\n")
+            f.write(f"    Model Path: {obj_data['model_path']}\n\n")
+
+print(f"\nGeneration reports saved:")
+print(f"  CSV Report: {report_filename}")
+print(f"  Text Report: {text_report_filename}")
+print(f"\nTotal scenes: {len(run_report)}")
+print(f"Total images planned: {sum(scene['num_images_planned'] for scene in run_report)}")
+print(f"Total images generated: {sum(scene['num_images_generated'] for scene in run_report)}")
