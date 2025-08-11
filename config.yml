@@ -44,4 +44,4 @@ material_randomization:
   roughness_min: 0.0              # Minimum roughness value (0.0 = perfectly smooth/mirror-like)
   roughness_max: 0.9              # Maximum roughness value (1.0 = completely rough/matte)
   metallic_min: 0.0               # Minimum metallic value (0.0 = non-metallic/dielectric)
-  metallic_max: 0.5               # Maximum metallic value (1.0 = fully metallic)
+  metallic_max: 0.9               # Maximum metallic value (1.0 = fully metallic)
