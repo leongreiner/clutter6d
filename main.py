@@ -25,17 +25,17 @@ with open(args.config, 'r') as f:
 
 # Create truncated Poisson PMF for instance sampling
 instance_values, instance_probs = create_trunc_poisson_pmf(
-    lambda_param=config['poisson_lambda'],
-    shift=config['poisson_shift'],
+    lambda_param=config['object_parameters']['poisson_lambda'],
+    shift=config['object_parameters']['poisson_shift'],
     min_val=1,
-    max_val=config['max_instances_per_object']
+    max_val=config['object_parameters']['max_instances_per_object']
 )
 
 bproc.init()
 bproc.camera.set_resolution(config['resolution'][0], config['resolution'][1])
 
 def load_model_paths():
-    models_path = config['models_path']
+    models_path = config['dataset']['models_path']
     all_models = {}
     
     gso_path = os.path.join(models_path, 'gso_simplified', '**', '*.glb')
@@ -71,8 +71,8 @@ def load_random_models(all_models, num_models):
     selected_models = random.sample(all_model_paths, num_to_sample)
     
     all_instances = []
-    max_instances = config['max_instances_per_object']
-    max_total_instances = config['max_total_instances']
+    max_instances = config['object_parameters']['max_instances_per_object']
+    max_total_instances = config['object_parameters']['max_total_instances']
     total_instances_created = 0
     print(f"Loading {num_to_sample} random models with up to {max_instances} instances each (max total: {max_total_instances})...")
     
@@ -188,7 +188,7 @@ light_plane_material = bproc.material.create('light_material')
 light_point = bproc.types.Light()
 light_point.set_energy(200)
 
-folder = config['cc_textures_path']
+folder = config['dataset']['cc_textures_path']
 asset_names = os.listdir(folder)
 
 cc_textures = []
@@ -209,7 +209,7 @@ run_report = []
 
 # Create timestamp for report filename
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-report_filename = os.path.join(config['output_dir'], config['dataset_name'], f'generation_report_{timestamp}.csv')
+report_filename = os.path.join(config['dataset']['output_dir'], config['dataset']['name'], f'generation_report_{timestamp}.csv')
 
 # Initialize CSV file with headers
 os.makedirs(os.path.dirname(report_filename), exist_ok=True)
@@ -263,13 +263,13 @@ bproc.renderer.set_max_amount_of_samples(50)
 
 print("Starting scene generation...")
 
-for i in range(config['num_scenes']):
+for i in range(config['scene_parameters']['num_scenes']):
     
     # Randomly select number of object classes and images for this scene
-    num_object_classes = np.random.randint(config['min_object_classes_per_scene'], 
-                                         config['max_object_classes_per_scene'] + 1)
-    num_images = np.random.randint(config['min_images_per_scene'], 
-                                 config['max_images_per_scene'] + 1)
+    num_object_classes = np.random.randint(config['object_parameters']['min_objects_per_scene'], 
+                                         config['object_parameters']['max_objects_per_scene'] + 1)
+    num_images = np.random.randint(config['scene_parameters']['min_images_per_scene'], 
+                                 config['scene_parameters']['max_images_per_scene'] + 1)
     
     print(f"Scene {i+1}: {num_object_classes} object classes, {num_images} images")
 
@@ -299,7 +299,7 @@ for i in range(config['num_scenes']):
         obj_id = obj.get_cp("obj_id")
         if obj_id not in object_sizes:
             # Generate random size for this object type in this scene
-            random_size = np.random.uniform(config['min_object_size'], config['max_object_size'])
+            random_size = np.random.uniform(config['object_parameters']['min_size'], config['object_parameters']['max_size'])
             object_sizes[obj_id] = random_size
     # Apply the consistent size to all instances of each object
     for obj in scene_objects:
@@ -320,9 +320,9 @@ for i in range(config['num_scenes']):
         mat.set_principled_shader_value("Roughness", 
             np.random.uniform(config['material_randomization']['roughness_min'], 
                             config['material_randomization']['roughness_max']))
-        mat.set_principled_shader_value("Specular IOR Level", 
-            np.random.uniform(config['material_randomization']['specular_min'], 
-                            config['material_randomization']['specular_max']))
+        mat.set_principled_shader_value("Metallic", 
+            np.random.uniform(config['material_randomization']['metallic_min'], 
+                            config['material_randomization']['metallic_max']))
         obj.set_shading_mode('auto')
         obj.enable_rigidbody(True, mass=1.0, friction = 100.0, linear_damping = 0.99, angular_damping = 0.99, collision_shape='CONVEX_HULL')
         obj.hide(False)
@@ -411,9 +411,9 @@ for i in range(config['num_scenes']):
     
     data = bproc.renderer.render()
 
-    bproc.writer.write_bop(os.path.join(config['output_dir']),
+    bproc.writer.write_bop(os.path.join(config['dataset']['output_dir']),
                            target_objects = scene_objects,
-                           dataset = config['dataset_name'],
+                           dataset = config['dataset']['name'],
                            depth_scale = 0.1,
                            depths = data["depth"],
                            colors = data["colors"], 

@@ -1,41 +1,40 @@
-# Paths
-models_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/3d_models"
-cc_textures_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/cctextures" 
-output_dir: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/di97jur/clutter6d/data" 
-
-# Dataset configuration
-dataset_name: "clutter6d"
+# Dataset and paths configuration
+dataset:
+  name: "clutter6d"
+  models_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/3d_models"
+  cc_textures_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/cctextures" 
+  output_dir: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/di97jur/clutter6d/data"
 
 # Scene generation parameters
-num_scenes: 1  
-min_object_classes_per_scene: 10
-max_object_classes_per_scene: 20
-min_images_per_scene: 25
-max_images_per_scene: 35
+scene_parameters:
+  num_scenes: 5                   # Total number of scenes to generate
+  min_images_per_scene: 25
+  max_images_per_scene: 25        # Fixed to 25 
 
 # Render resolution
 resolution: [672, 448] # Devidable by 14 for ViT backbone compatibility
 
-# Instance parameters
-max_instances_per_object: 10  # Maximum number of instances per object (hard cap)
-max_total_instances: 40      # Maximum total instances across all objects in a scene
+# Object and instance parameters
+object_parameters:
+  min_objects_per_scene: 10       
+  max_objects_per_scene: 20       
+  max_instances_per_object: 10    # Maximum number of instances per object (hard cap)
+  max_total_instances: 40         # Maximum total instances across all objects in a scene
+  min_size: 0.1                   # Minimum object size in meters
+  max_size: 0.3                   # Maximum object size in meters
 
-# Poisson distribution parameters for instance selection
-poisson_lambda: 3.5 # Lambda parameter (rate), lower values favor fewer instances
-poisson_shift: -2
-
-# Object size parameters
-min_object_size: 0.1
-max_object_size: 0.3
+  # Poisson distribution parameters for instance selection
+  poisson_lambda: 3.5             # Lambda parameter (rate), lower values favor fewer instances
+  poisson_shift: -2               # Shift parameter for truncated Poisson distribution
 
 # Object position sampling parameters
 position_sampling:
-  min_radius: 0.2  # Minimum radius
-  max_radius: 0.5  # Maximum radius 
-  min_height: 0.4  # Minimum height (minimum: max_object_size)
-  max_height: 0.6  # Maximum height
+  min_radius: 0.2 
+  max_radius: 0.5  
+  min_height: 0.4  # minimum: max_object_size
+  max_height: 0.6  
 
-# Camera parameters
+# Camera pose parameters
 camera:
   radius_min: 0.5    # Minimum distance from center for camera placement
   radius_max: 2.0    # Maximum distance from center for camera placement
@@ -44,7 +43,7 @@ camera:
 
 # Material randomization parameters
 material_randomization:
-  roughness_min: 0.3    # Minimum roughness value (0.0 = perfectly smooth/mirror-like)
-  roughness_max: 0.7    # Maximum roughness value (1.0 = completely rough/matte)
-  specular_min: 0.3     # Minimum specular IOR level (0.0 = no specular reflections)
-  specular_max: 0.7     # Maximum specular IOR level (1.0 = strong specular reflections)
+  roughness_min: 0.0    # Minimum roughness value (0.0 = perfectly smooth/mirror-like)
+  roughness_max: 0.3    # Maximum roughness value (1.0 = completely rough/matte)
+  metallic_min: 0.0     # Minimum metallic value (0.0 = non-metallic/dielectric)
+  metallic_max: 0.3     # Maximum metallic value (1.0 = fully metallic)
