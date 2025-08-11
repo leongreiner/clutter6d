@@ -1,0 +1,12 @@
+name: clutter6d
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pyyaml
+  - tqdm
+  - pip:
+    - blenderproc>=2.0.0
+    - bpy

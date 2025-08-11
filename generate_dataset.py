@@ -30,7 +30,7 @@ from utils import (
 )
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--config', default="config.yaml", help="Path to configuration file")
+parser.add_argument('--config', default="config.yml", help="Path to configuration file")
 args = parser.parse_args()
 
 # Load configuration file
