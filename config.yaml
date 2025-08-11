@@ -10,7 +10,7 @@ scene_parameters:
   num_scenes: 1                   # Total number of scenes to generate
   min_images_per_scene: 25
   max_images_per_scene: 25        # Fixed to 25 
-  resolution: [672, 448] # Devidable by 14 for ViT backbone compatibility
+  resolution: [672, 448]          # Devidable by 14 for ViT backbone compatibility
 
 # Object and instance parameters
 object_parameters:
@@ -29,19 +29,19 @@ object_parameters:
 position_sampling:
   min_radius: 0.2 
   max_radius: 0.5  
-  min_height: 0.4  # minimum: max_object_size
+  min_height: 0.4                 # minimum: max_object_size
   max_height: 0.6  
 
 # Camera pose parameters
 camera:
-  radius_min: 0.5    # Minimum distance from center for camera placement
-  radius_max: 2.0    # Maximum distance from center for camera placement
-  elevation_min: 5   # Minimum elevation angle in degrees
-  elevation_max: 89  # Maximum elevation angle in degrees
+  radius_min: 0.5                 # Minimum distance from center for camera placement
+  radius_max: 2.0                 # Maximum distance from center for camera placement
+  elevation_min: 5                # Minimum elevation angle in degrees
+  elevation_max: 89               # Maximum elevation angle in degrees
 
 # Material randomization parameters
 material_randomization:
-  roughness_min: 0.0    # Minimum roughness value (0.0 = perfectly smooth/mirror-like)
-  roughness_max: 0.3    # Maximum roughness value (1.0 = completely rough/matte)
-  metallic_min: 0.0     # Minimum metallic value (0.0 = non-metallic/dielectric)
-  metallic_max: 0.3     # Maximum metallic value (1.0 = fully metallic)
+  roughness_min: 0.0              # Minimum roughness value (0.0 = perfectly smooth/mirror-like)
+  roughness_max: 0.7              # Maximum roughness value (1.0 = completely rough/matte)
+  metallic_min: 0.0               # Minimum metallic value (0.0 = non-metallic/dielectric)
+  metallic_max: 0.3               # Maximum metallic value (1.0 = fully metallic)
