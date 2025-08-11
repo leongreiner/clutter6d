@@ -13,7 +13,7 @@ def initialize_report(config):
     with open(report_filename, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = [
             'scene_id', 'num_object_classes', 'num_images_planned', 'num_images_generated',
-            'total_object_instances', 'object_data'
+            'total_object_instances', 'object_data', 'generation_start_time'
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -27,13 +27,12 @@ def create_scene_report(scene_id, num_object_classes, num_images):
         'num_images_planned': num_images,
         'num_images_generated': 0,
         'objects': [],
-        'object_sizes': {}
+        'object_sizes': {},
+        'generation_start_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
 def collect_object_data(scene_objects, object_sizes):
     object_instance_counts = {}
-    
-    print(f"Placing {len(scene_objects)} object instances:")
     
     for j, obj in enumerate(scene_objects):
         obj_path = obj.get_cp("model_path") if obj.has_cp("model_path") else "unknown"
@@ -56,7 +55,7 @@ def collect_object_data(scene_objects, object_sizes):
             }
         object_instance_counts[obj_id]['count'] += 1
         
-        print(f"  {j+1:2d}. {obj.get_name()} (obj_id: {obj_id}, cat: {category}, name: {name}, instance: {instance_id}, size: {assigned_size:.3f}m) -> {os.path.basename(obj_path)}")
+        print(f"  {j+1:2d}. {obj.get_name()} (obj_id: {obj_id}, cat: {category}, name: {name}, instance: {instance_id}, size: {assigned_size:.3f}m)")
     
     return object_instance_counts
 
@@ -70,18 +69,17 @@ def write_scene_report(report_filename, scene_report, run_report):
         'num_images_planned': scene_report['num_images_planned'],
         'num_images_generated': scene_report['num_images_generated'],
         'total_object_instances': total_instances,
-        'object_data': object_data_json
+        'object_data': object_data_json,
+        'generation_start_time': scene_report.get('generation_start_time', 'unknown')
     }
     
     # Append to CSV file
     with open(report_filename, 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=[
             'scene_id', 'num_object_classes', 'num_images_planned', 'num_images_generated',
-            'total_object_instances', 'object_data'
+            'total_object_instances', 'object_data', 'generation_start_time'
         ])
         writer.writerow(row)
     
     # Add to run report
     run_report.append(scene_report)
-    print(f"Scene {scene_report['scene_id']} completed: {scene_report['num_images_generated']}/{scene_report['num_images_planned']} images generated")
-    print(f"Report updated: {report_filename}")

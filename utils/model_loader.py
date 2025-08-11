@@ -42,10 +42,8 @@ def load_random_models(all_models, num_models, config, instance_values, instance
     selected_models = random.sample(all_model_paths, num_to_sample)
     
     all_instances = []
-    max_instances = config['object_parameters']['max_instances_per_object']
     max_total_instances = config['object_parameters']['max_total_instances']
     total_instances_created = 0
-    print(f"Loading {num_to_sample} random models with up to {max_instances} instances each (max total: {max_total_instances})...")
     
     loaded_count = 0
     for i, (model_path, source) in enumerate(selected_models):
@@ -101,20 +99,17 @@ def load_random_models(all_models, num_models, config, instance_values, instance
             # Choose number of instances using precomputed PMF
             # But limit based on remaining total instance budget and remaining base objects
             remaining_instances = max_total_instances - total_instances_created
-            
             # Reserve at least 1 instance for each remaining base object (including this one)
-            instances_available_for_extras = remaining_instances - remaining_base_objects
+            instances_available = remaining_instances - remaining_base_objects 
             
-            if instances_available_for_extras <= 0:
+            if instances_available <= 0:
                 # Only room for base objects, no extra instances
                 num_instances = 1
-                print(f"  Creating 1 instance of {source} model (base only - reserving space for {remaining_base_objects-1} more base objects)")
             else:
                 # Normal instance selection, but cap at available budget for extras + 1 base
                 desired_instances = np.random.choice(instance_values, p=instance_probs)
-                max_instances_for_this_object = min(desired_instances, instances_available_for_extras + 1)
+                max_instances_for_this_object = min(desired_instances, instances_available + 1)
                 num_instances = max_instances_for_this_object
-                print(f"  Creating {num_instances} instances of {source} model (total so far: {total_instances_created + num_instances}/{max_total_instances})")
             
             # Create instances
             for instance_id in range(1, num_instances + 1):
@@ -123,20 +118,15 @@ def load_random_models(all_models, num_models, config, instance_values, instance
                 else:
                     instance_obj = base_obj.duplicate()
                 
-                # Set instance-specific properties
                 instance_obj.set_cp("instance_id", instance_id)
-                
-                # Initially hide all objects
                 instance_obj.hide(True)
-                
                 all_instances.append(instance_obj)
                 total_instances_created += 1
             
             # Clean up extra objects
-            for extra_obj in valid_objects[1:]:
-                extra_obj.delete()
+            for obj in valid_objects[1:]:
+                obj.delete()
             
             loaded_count += 1
-    
-    print(f"Successfully loaded {loaded_count}/{num_to_sample} models ({len(all_instances)} total instances)")
+            
     return all_instances
