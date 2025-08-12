@@ -116,4 +116,5 @@ job_logs/
 stuff/
 debug/
 analysis/
-test_render_output
+test_render_output/
+templates/
