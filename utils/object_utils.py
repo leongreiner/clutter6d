@@ -38,5 +38,4 @@ def setup_physics(scene_objects):
 
 def cleanup_scene_objects(scene_objects):
     for obj in scene_objects:      
-        obj.disable_rigidbody()
-        obj.hide(True)
+        obj.delete()
