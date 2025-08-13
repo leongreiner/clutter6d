@@ -31,11 +31,16 @@ from utils import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', default="config.yml", help="Path to configuration file")
+parser.add_argument('--output_dir', help="Output directory (overrides config value)")
 args = parser.parse_args()
 
 # Load configuration file
 with open(args.config, 'r') as f:
     config = yaml.safe_load(f)
+
+# Override output_dir if provided via command line
+if args.output_dir:
+    config['dataset']['output_dir'] = args.output_dir
 
 # Create truncated Poisson PMF for instance sampling
 instance_values, instance_probs = create_trunc_poisson_pmf(
