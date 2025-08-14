@@ -12,7 +12,6 @@ import os
 import sys
 import numpy as np
 import yaml
-from tqdm import tqdm
 
 # Add current directory to Python path for module imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -24,9 +23,9 @@ from utils import (
     load_random_models, load_model_paths,
     sample_poses,
     initialize_report, create_scene_report, collect_object_data, write_scene_report,
-    setup_room_and_lighting, load_textures, randomize_scene_lighting,
-    generate_camera_poses,
-    apply_random_sizes, apply_material_randomization, setup_physics, cleanup_scene_objects
+    setup_room_and_lighting, load_texture, randomize_scene_lighting, clean_up,
+    generate_camera_poses, set_random_camera_intrinsics, get_camera_radius_and_room_size,
+    apply_random_sizes, apply_material_randomization, setup_physics
 )
 
 parser = argparse.ArgumentParser()
@@ -56,10 +55,6 @@ bproc.camera.set_resolution(config['scene_parameters']['resolution'][0], config[
 
 all_model_paths = load_model_paths(config)
 
-# Setup room, lighting, and load textures
-room_planes, light_plane, light_plane_material, light_point = setup_room_and_lighting()
-cc_textures = load_textures(config)
-
 # Initialize report
 report_filename, run_report = initialize_report(config)
 
@@ -78,8 +73,17 @@ for i in range(config['scene_parameters']['num_scenes']):
     # Initialize scene report data
     scene_report = create_scene_report(i + 1, num_object_classes, num_images)
 
-    # Clear camera poses from previous scene
-    bproc.utility.reset_keyframes()
+    # Set random camera intrinsics for this scene
+    cam_K = set_random_camera_intrinsics(
+        config['scene_parameters']['resolution'][0], 
+        config['scene_parameters']['resolution'][1]
+    )
+
+    # Get camera radius and room size, dependent on camera intrinsics
+    radius_min, radius_max, room_size = get_camera_radius_and_room_size(config, cam_K)
+
+    # Setup room, lighting for this scene
+    room_planes, light_plane, light_plane_material, light_point = setup_room_and_lighting(room_size)
 
     # Load random models for this scene
     scene_objects = load_random_models(all_model_paths, num_object_classes, config, instance_values, instance_probs)
@@ -92,8 +96,12 @@ for i in range(config['scene_parameters']['num_scenes']):
     apply_material_randomization(scene_objects, config)
     setup_physics(scene_objects)
     
+    # Load one random texture for this scene
+    cc_texture, texture_name = load_texture(config)
+    scene_report['cc_texture'] = texture_name
+    
     # Randomize scene lighting and background texture
-    randomize_scene_lighting(light_plane_material, light_point, room_planes, cc_textures)
+    randomize_scene_lighting(light_plane, light_plane_material, light_point, room_planes, [cc_texture])
 
     # Collect object data for reporting
     object_instance_counts = collect_object_data(scene_objects, object_sizes)
@@ -108,7 +116,7 @@ for i in range(config['scene_parameters']['num_scenes']):
                                                     solver_iters=25)
 
     # Generate camera poses
-    cam_poses = generate_camera_poses(scene_objects, num_images, config)
+    cam_poses = generate_camera_poses(config, scene_objects, num_images, radius_min, radius_max)
     scene_report['num_images_generated'] = cam_poses # Store number of images generated in scene report
 
     # Rendering and writing data
@@ -120,14 +128,14 @@ for i in range(config['scene_parameters']['num_scenes']):
                            depths = data["depth"],
                            colors = data["colors"], 
                            color_file_format = "JPEG",
-                           ignore_dist_thres = 10)
-    
-    # Cleanup scene objects
-    cleanup_scene_objects(scene_objects)
-    
+                           ignore_dist_thres = 10,
+                           annotation_unit="mm",
+                           delta=0.015)
+
     # Write scene report
     write_scene_report(report_filename, scene_report, run_report)
     
     # Memory cleanup
     scene_report = None
     object_instance_counts = None
+    clean_up(scene_objects)

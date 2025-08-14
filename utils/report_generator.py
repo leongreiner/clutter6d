@@ -13,7 +13,7 @@ def initialize_report(config):
     with open(report_filename, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = [
             'scene_id', 'num_object_classes', 'num_images_planned', 'num_images_generated',
-            'total_object_instances', 'object_data', 'generation_start_time'
+            'total_object_instances', 'object_data', 'cc_texture', 'generation_start_time'
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -70,6 +70,7 @@ def write_scene_report(report_filename, scene_report, run_report):
         'num_images_generated': scene_report['num_images_generated'],
         'total_object_instances': total_instances,
         'object_data': object_data_json,
+        'cc_texture': scene_report.get('cc_texture', 'unknown'),
         'generation_start_time': scene_report.get('generation_start_time', 'unknown')
     }
     
@@ -77,7 +78,7 @@ def write_scene_report(report_filename, scene_report, run_report):
     with open(report_filename, 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=[
             'scene_id', 'num_object_classes', 'num_images_planned', 'num_images_generated',
-            'total_object_instances', 'object_data', 'generation_start_time'
+            'total_object_instances', 'object_data', 'cc_texture', 'generation_start_time'
         ])
         writer.writerow(row)
     

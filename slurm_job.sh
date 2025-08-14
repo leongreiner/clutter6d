@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=RMC-C01-BATCH
 #SBATCH --nodelist=rmc-gpu18
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=12
 #SBATCH --mem=100G
 #SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00
@@ -16,6 +16,16 @@ sleep $(( (SLURM_ARRAY_TASK_ID - 1) * 1 ))
 # Set output directory based on array task ID
 OUTPUT_DIR="/volume/hot_storage/slurm_data/grei_lo/clutter6d_${SLURM_ARRAY_TASK_ID}"
 
-blenderproc run /home/grei_lo/Projects/clutter6d/generate_dataset.py \
-  --config config.yml \
-  --output_dir "$OUTPUT_DIR"
+# Run the rendering script multiple times to prevent memory issues
+for i in {1..7}; do
+    echo "Starting run $i/10 for job ${SLURM_ARRAY_TASK_ID}"
+    
+    blenderproc run /home/grei_lo/Projects/clutter6d/generate_dataset.py \
+      --config config_slurm.yml \
+      --output_dir "$OUTPUT_DIR"
+    
+    echo "Completed run $i/10 for job ${SLURM_ARRAY_TASK_ID}"
+    sleep 5
+done
+
+echo "All 10 runs completed for job ${SLURM_ARRAY_TASK_ID}"

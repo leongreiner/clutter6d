@@ -35,7 +35,3 @@ def setup_physics(scene_objects):
         obj.set_shading_mode('auto')
         obj.enable_rigidbody(True, mass=1.0, friction=100.0, linear_damping=0.99, angular_damping=0.99, collision_shape='CONVEX_HULL')
         obj.hide(False)
-
-def cleanup_scene_objects(scene_objects):
-    for obj in scene_objects:      
-        obj.delete()
