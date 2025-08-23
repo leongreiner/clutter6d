@@ -17,7 +17,7 @@ sleep $(( (SLURM_ARRAY_TASK_ID - 1) * 1 ))
 OUTPUT_DIR="/volume/hot_storage/slurm_data/grei_lo/extra_run/clutter6d_${SLURM_ARRAY_TASK_ID}"
 
 # Run the rendering script multiple times to prevent memory issues
-for i in {1..10}; do
+for i in {1..40}; do
     echo "Starting run $i/10 for job ${SLURM_ARRAY_TASK_ID}"
     
     blenderproc run /home/grei_lo/Projects/clutter6d/generate_dataset.py \
