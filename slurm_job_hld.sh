@@ -21,7 +21,7 @@ for i in {1..16}; do
     echo "Starting run $i/10 for job ${SLURM_ARRAY_TASK_ID}"
     
     blenderproc run /home/grei_lo/Projects/clutter6d/generate_dataset.py \
-      --config config_slurm.yml \
+      --config config_slurm_hld.yml \
       --output_dir "$OUTPUT_DIR"
     
     echo "Completed run $i for job ${SLURM_ARRAY_TASK_ID}"

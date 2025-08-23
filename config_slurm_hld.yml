@@ -1,6 +1,6 @@
 # Dataset and paths configuration
 dataset:
-  name: "clutter6d"
+  name: "clutter6d_hld"
   models_path: "/home_local/grei_lo/clutter6d/3d_models"
   cc_textures_path: "/volume/pekdat/datasets/public/cctextures/" 
   output_dir: "/volume/hot_storage/slurm_data/grei_lo/"
