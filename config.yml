@@ -7,7 +7,7 @@ dataset:
 
 # Scene generation parameters
 scene_parameters:
-  num_scenes: 40                  # Total number of scenes to generate
+  num_scenes: 10                  # Total number of scenes to generate
   min_images_per_scene: 25
   max_images_per_scene: 25        # Fixed to 25 
   resolution: [700, 700]          # Devidable by 14 for ViT backbone compatibility
