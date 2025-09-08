@@ -141,7 +141,8 @@ for i in range(config['scene_parameters']['num_scenes']):
                        config['dataset']['name'], 
                        scene_objects, 
                        object_sizes, 
-                       total_images_generated)
+                       total_images_generated,
+                       cam_poses)
 
     # Update total images count
     total_images_generated += len(cam_poses)
