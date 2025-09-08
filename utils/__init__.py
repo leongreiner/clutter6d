@@ -5,3 +5,4 @@ from .report_generator import initialize_report, create_scene_report, collect_ob
 from .scene_setup import setup_room_and_lighting, load_texture, randomize_scene_lighting, clean_up
 from .camera_utils import generate_camera_poses, set_random_camera_intrinsics, get_camera_radius_and_room_size
 from .object_utils import apply_random_sizes, apply_material_randomization, setup_physics
+from .gt_obj_writer import write_scene_gt_obj

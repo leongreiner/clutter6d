@@ -25,7 +25,8 @@ from utils import (
     initialize_report, create_scene_report, collect_object_data, write_scene_report,
     setup_room_and_lighting, load_texture, randomize_scene_lighting, clean_up,
     generate_camera_poses, set_random_camera_intrinsics, get_camera_radius_and_room_size,
-    apply_random_sizes, apply_material_randomization, setup_physics
+    apply_random_sizes, apply_material_randomization, setup_physics,
+    write_scene_gt_obj
 )
 
 parser = argparse.ArgumentParser()
@@ -57,6 +58,9 @@ all_model_paths = load_model_paths(config)
 
 # Initialize report
 report_filename, run_report = initialize_report(config)
+
+# Track total images generated across all scenes
+total_images_generated = 0
 
 # Setup renderer
 bproc.renderer.enable_depth_output(activate_antialiasing=False)
@@ -131,6 +135,16 @@ for i in range(config['scene_parameters']['num_scenes']):
                            ignore_dist_thres = 10,
                            annotation_unit="mm",
                            delta=0.015)
+
+    # Write scene_gt_obj.json with object sizes
+    write_scene_gt_obj(config['dataset']['output_dir'], 
+                       config['dataset']['name'], 
+                       scene_objects, 
+                       object_sizes, 
+                       total_images_generated)
+
+    # Update total images count
+    total_images_generated += len(cam_poses)
 
     # Write scene report
     write_scene_report(report_filename, scene_report, run_report)
