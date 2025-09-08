@@ -145,7 +145,7 @@ for i in range(config['scene_parameters']['num_scenes']):
                        cam_poses)
 
     # Update total images count
-    total_images_generated += len(cam_poses)
+    total_images_generated += cam_poses
 
     # Write scene report
     write_scene_report(report_filename, scene_report, run_report)

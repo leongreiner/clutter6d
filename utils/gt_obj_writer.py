@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 
-def write_scene_gt_obj(output_dir, dataset_name, scene_objects, object_sizes, total_images_so_far, cam_poses):
+def write_scene_gt_obj(output_dir, dataset_name, scene_objects, object_sizes, total_images_so_far, num_images_this_scene):
     """
     Write scene_gt_obj.json file that contains the same information as scene_gt.json
     but with additional obj_size information for each object instance.
@@ -10,14 +10,14 @@ def write_scene_gt_obj(output_dir, dataset_name, scene_objects, object_sizes, to
     Args:
         output_dir (str): Base output directory
         dataset_name (str): Name of the dataset
-        scene_objects (list): List of BlenderProc objects in the scene
+        scene_objects (list): List of BlenderProc objects in the scene (not used anymore)
         object_sizes (dict): Dictionary mapping obj_id to size values
         total_images_so_far (int): Total number of images generated so far (before this scene)
-        cam_poses (list): List of camera poses for this scene
+        num_images_this_scene (int): Number of images generated for this scene
     """
     
-    # Get the number of camera poses from the current scene
-    current_scene_images = len(cam_poses)
+    # Get the number of images from this scene
+    current_scene_images = num_images_this_scene
     
     # Calculate which folders this scene's images will be written to
     # BOP format uses 1000 images per folder (000000, 000001, etc.)
