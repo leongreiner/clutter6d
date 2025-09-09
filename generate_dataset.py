@@ -59,9 +59,6 @@ all_model_paths = load_model_paths(config)
 # Initialize report
 report_filename, run_report = initialize_report(config)
 
-# Track total images generated across all scenes
-total_images_generated = 0
-
 # Setup renderer
 bproc.renderer.enable_depth_output(activate_antialiasing=False)
 bproc.renderer.set_max_amount_of_samples(50)
@@ -137,15 +134,15 @@ for i in range(config['scene_parameters']['num_scenes']):
                            delta=0.015)
 
     # Write scene_gt_obj.json with object sizes
-    write_scene_gt_obj(config['dataset']['output_dir'], 
-                       config['dataset']['name'], 
-                       scene_objects, 
-                       object_sizes, 
-                       total_images_generated,
-                       cam_poses)
-
-    # Update total images count
-    total_images_generated += cam_poses
+    write_scene_gt_obj(
+        output_dir=config['dataset']['output_dir'],
+        dataset_name=config['dataset']['name'],
+        object_sizes=object_sizes,             
+        num_new_frames=len(data["colors"]),     
+        split="train_pbr",
+        frames_per_chunk=1000,                  
+        mode="auto"
+    )
 
     # Write scene report
     write_scene_report(report_filename, scene_report, run_report)
