@@ -1,0 +1,49 @@
+# Template Rendering Configuration
+
+# Paths configuration
+paths:
+  base_models_dir: "/volume/hot_storage/slurm_data/grei_lo/clutter6d/3d_models/"
+  output_root: "/volume/hot_storage/slurm_data/grei_lo/clutter6d/templates"
+
+# Dataset paths (relative to base_models_dir)
+datasets:
+  gso: "gso_simplified"
+  oo3d: "oo3d_simplified" 
+  objaverse: "objaverse_simplified"
+
+# Rendering parameters
+rendering:
+  subdivisions: 1
+  image_size: 700
+  num_surface_points: 10000
+  fov_deg: 60.0
+  
+# Camera settings
+camera:
+  focal_length: null  # Will be calculated from fov_deg and image_size
+  principal_point: null  # Will be calculated from image_size
+  
+# Rasterization settings
+rasterization:
+  blur_radius: 0.0
+  faces_per_pixel: 3
+  bin_size: 0
+  max_faces_per_bin: 1000000000
+  
+# Mesh validation thresholds
+validation:
+  center_tolerance: 0.02  # Maximum allowed bbox center distance from origin
+  scale_tolerance: 0.02   # Maximum allowed deviation from unit scale
+  
+# Background color for rendering (RGB values 0-1)
+background_color: [0.0, 0.0, 0.0]
+
+# File naming patterns
+file_patterns:
+  glb_prefix: "obj_id_"
+  glb_extension: ".glb"
+  
+# Processing settings
+processing:
+  skip_existing: false
+  max_workers: null  # Will use number of available GPUs
