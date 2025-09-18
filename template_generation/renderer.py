@@ -19,7 +19,7 @@ from pytorch3d.renderer import (
 from pytorch3d.io import IO
 from pytorch3d.io.experimental_gltf_io import MeshGlbFormat
 
-from utils import (
+from .utils import (
     sample_surface_points,
     save_to_hdf5,
     extract_obj_id_from_filename,

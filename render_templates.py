@@ -7,7 +7,7 @@ import h5py
 import numpy as np
 import torch
 import yaml
-from renderer import ObjRenderer
+from template_generation.renderer import ObjRenderer
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.dirname(script_dir)
@@ -182,7 +182,7 @@ def render_on_gpu(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Batch render GLB models across multiple GPUs')
-    parser.add_argument('--config', type=str, help='Path to config YAML file')
+    parser.add_argument('--config', default='template_generation/config.yml', type=str, help='Path to config YAML file')
     parser.add_argument('--skip_existing', action='store_true',
                        help='Skip models that have already been rendered')
     
