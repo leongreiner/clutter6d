@@ -1,12 +1,21 @@
 name: clutter6d
 channels:
   - conda-forge
+  - pytorch
   - defaults
 dependencies:
   - python=3.9
   - numpy
   - pyyaml
   - tqdm
+  - pytorch
+  - torchvision
+  - pytorch-cuda=12.4
+  - pillow
+  - h5py
   - pip:
     - blenderproc>=2.0.0
     - bpy
+    - pytorch3d
+    - fvcore
+    - iopath
