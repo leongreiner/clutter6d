@@ -30,7 +30,7 @@ The dataset provides significantly denser, more cluttered scenes than existing b
   <img src="assets/model_sample_bucket.png" alt="CAD Model Sample - Bucket" width="45%">
   <img src="assets/model_sample_figurine.png" alt="CAD Model Sample - Figurine" width="45%">
   <br>
-  <em>High-quality 3D CAD models from GSO, OO3D, and Objaverse datasets.</em>
+  <em>10,481 High-quality 3D CAD models from GSO, OO3D, and Objaverse are used for Clutter6D.</em>
 </div>
 
 #### Clutter6D Scene Renders
