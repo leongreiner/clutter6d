@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+
+'''
+Template renderer for clutter6d using PyTorch3D.
+Generates multi-viewpoint object templates from GLB models for template matching.
+Features: multi-GPU batch processing, icosphere viewpoint sampling, HDF5 storage with
+JPEG compression, camera intrinsics/extrinsics, and surface point sampling.
+'''
+
 import os
 import sys
 import argparse
@@ -21,7 +29,6 @@ def load_config(config_path: str = None) -> dict:
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Set computed values
     if config['processing']['max_workers'] is None:
         config['processing']['max_workers'] = torch.cuda.device_count()
     
@@ -113,12 +120,6 @@ def extract_obj_id_from_glb_filename(file_path: str) -> str:
     return obj_id
 
 
-
-def check_texture_requirements(glb_path: str) -> bool:
-    return True
-
-
-
 def render_on_gpu(args):
     dataset_key, model_path, config, gpu_id, skip_existing = args
     
@@ -145,9 +146,6 @@ def render_on_gpu(args):
                 except Exception as e:
                     print(f"Warning: Could not remove {h5_path}: {e}")
         
-        if not check_texture_requirements(model_path):
-            return f"CRITICAL ERROR: No valid texture found for GLB file {dataset_key}/{obj_id}"
-        
         try:
             renderer = ObjRenderer(
                 device=device,
@@ -159,7 +157,7 @@ def render_on_gpu(args):
                 scale_tolerance=config['validation']['scale_tolerance']
             )
             output_dir = config['paths']['output_root']
-            chunk_size = config['rendering'].get('chunk_size', 14)  # Default to 14 if not specified
+            chunk_size = config['rendering'].get('chunk_size', 14)
             renderer.render(model_path, output_dir, obj_id, 
                           num_surface_points=config['rendering']['num_surface_points'],
                           chunk_size=chunk_size)
@@ -179,14 +177,13 @@ def render_on_gpu(args):
         return f"Error rendering {dataset_key}/{os.path.basename(model_path)} on GPU {gpu_id}: {e}"
 
 
-
 def main():
     parser = argparse.ArgumentParser(description='Batch render GLB models across multiple GPUs')
     parser.add_argument('--config', default='template_generation/config.yml', type=str, help='Path to config YAML file')
     parser.add_argument('--skip_existing', action='store_true',
                        help='Skip models that have already been rendered')
     
-    # Add config override arguments
+    # Config override arguments
     parser.add_argument('--base_models_dir', type=str, help='Override base models directory')
     parser.add_argument('--output_root', type=str, help='Override output root directory')
     parser.add_argument('--subdivisions', type=int, help='Override subdivisions')
@@ -196,7 +193,6 @@ def main():
     
     args = parser.parse_args()
 
-    # Load configuration
     config = load_config(args.config)
     
     # Override config with command line arguments if provided
@@ -218,7 +214,6 @@ def main():
     BASE_MODELS_DIR = config['paths']['base_models_dir']
     OUTPUT_ROOT = config['paths']['output_root']
 
-    # Get available GPUs
     num_gpus = torch.cuda.device_count()
     if num_gpus == 0:
         print("No GPUs available, falling back to CPU")
