@@ -8,6 +8,46 @@ This project consists of two main components:
 1. **Query Generation**: Creates synthetic cluttered scenes with multiple objects using BlenderProc
 2. **Template Generation**: Renders object templates from multiple viewpoints using PyTorch3D
 
+## Dataset Background
+
+Existing datasets fall short for large-scale 6D pose estimation: real datasets lack model diversity (<100 objects) and are costly to create, while synthetic datasets like MegaPose (21k objects) and Omni6D-XL (15k objects) don't support multi-instance cluttered scenes.
+
+**Our Solution: Clutter6D Dataset**
+- **Models**: 10,481 high-quality CAD models from GSO, OO3D, and Objaverse across 681 categories
+- **Rendering**: BlenderProc with PBR rendering, physics simulation for realistic clutter
+- **Two variants**: 
+  - Household (10-20 object classes, fewer instances)
+  - Industrial (2-5 object classes, more instances per class)
+- **Scene generation**: Poisson-distributed instance counts, randomized materials/lighting, 25 camera views per scene at 700×700 resolution
+- **Templates**: Fast PyTorch3D renderer creates 42 viewpoints per object in HDF5 format with camera matrices and 10k surface points
+
+The dataset provides significantly denser, more cluttered scenes than existing benchmarks while maintaining photorealistic quality through high-quality 3D scans.
+
+### Dataset Examples
+
+#### 3D CAD Model Samples
+<div align="center">
+  <img src="assets/model_sample_bucket.png" alt="CAD Model Sample - Bucket" width="45%">
+  <img src="assets/model_sample_figurine.png" alt="CAD Model Sample - Figurine" width="45%">
+  <br>
+  <em>High-quality 3D CAD models from GSO, OO3D, and Objaverse datasets.</em>
+</div>
+
+#### Clutter6D Scene Renders
+<div align="center">
+  <img src="assets/clutter6d_hse.png" alt="Clutter6D Household Scene" width="45%">
+  <img src="assets/clutter6d_ind.png" alt="Clutter6D Industrial Scene" width="45%">
+  <br>
+  <em>Left: Household variant with diverse object classes. Right: Industrial variant with multiple instances per class.</em>
+</div>
+
+#### Template Rendering Example
+<div align="center">
+  <img src="assets/templates_sample.png" alt="42 Template Views Grid" width="70%">
+  <br>
+  <em>42-viewpoint template grid generated using icosphere sampling for fast template matching.</em>
+</div>
+
 ## Installation
 
 ### Prerequisites
@@ -44,7 +84,7 @@ pip install h5py pillow
 Generate synthetic cluttered scenes with BOP-format annotations:
 
 ```bash
-python generate_dataset.py --config config.yml
+python render_queries.py --config config.yml
 ```
 
 **Key Features:**
@@ -100,7 +140,7 @@ python render_templates.py --config template_generation/config.yml --skip_existi
 
 **Query Generation:**
 ```bash
-python generate_dataset.py --config config.yml --output_dir /custom/path
+python render_queries.py --config config.yml --output_dir /custom/path
 ```
 
 **Template Rendering:**

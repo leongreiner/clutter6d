@@ -1,0 +1,47 @@
+# Dataset and paths configuration
+dataset:
+  name: "clutter6d"
+  models_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/3d_models"
+  cc_textures_path: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/cctextures" 
+  output_dir: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/di97jur/clutter6d/data"
+
+# Scene generation parameters
+scene_parameters:
+  num_scenes: 2                  # Total number of scenes to generate
+  min_images_per_scene: 25
+  max_images_per_scene: 25        # Fixed to 25 
+  resolution: [700, 700]          # Devidable by 14 for ViT backbone compatibility
+
+# Object and instance parameters
+object_parameters:
+  min_objects_per_scene: 10       
+  max_objects_per_scene: 20       
+  max_instances_per_object: 10    # Maximum number of instances per object (hard cap)
+  max_total_instances: 40         # Maximum total instances across all objects in a scene
+  min_size: 0.1                   # Minimum object size in meters
+  max_size: 0.3                   # Maximum object size in meters
+
+  # Poisson distribution parameters for instance selection
+  poisson_lambda: 3.5             # Lambda parameter (rate), lower values favor fewer instances
+  poisson_shift: -2               # Shift parameter for truncated Poisson distribution
+
+# Object position sampling parameters
+position_sampling:
+  min_radius: 0.2 
+  max_radius: 0.5  
+  min_height: 0.4                 # minimum: max_object_size
+  max_height: 0.6  
+
+# Camera pose parameters
+camera:
+  radius_min: 0.5                 # Minimum distance from center for camera placement
+  radius_max: 1.8                 # Maximum distance from center for camera placement
+  elevation_min: 5                # Minimum elevation angle in degrees
+  elevation_max: 89               # Maximum elevation angle in degrees
+
+# Material randomization parameters
+material_randomization:
+  roughness_min: 0.0              # Minimum roughness value (0.0 = perfectly smooth/mirror-like)
+  roughness_max: 0.9              # Maximum roughness value (1.0 = completely rough/matte)
+  metallic_min: 0.0               # Minimum metallic value (0.0 = non-metallic/dielectric)
+  metallic_max: 0.9               # Maximum metallic value (1.0 = fully metallic)
