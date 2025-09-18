@@ -159,8 +159,10 @@ def render_on_gpu(args):
                 scale_tolerance=config['validation']['scale_tolerance']
             )
             output_dir = config['paths']['output_root']
+            chunk_size = config['rendering'].get('chunk_size', 14)  # Default to 14 if not specified
             renderer.render(model_path, output_dir, obj_id, 
-                          num_surface_points=config['rendering']['num_surface_points'])
+                          num_surface_points=config['rendering']['num_surface_points'],
+                          chunk_size=chunk_size)
             if not check_render_content(h5_path):
                 return f"WARNING: No object visible in render for {dataset_key}/{obj_id}"
             else:
@@ -190,6 +192,7 @@ def main():
     parser.add_argument('--subdivisions', type=int, help='Override subdivisions')
     parser.add_argument('--image_size', type=int, help='Override image size')
     parser.add_argument('--num_surface_points', type=int, help='Override number of surface points')
+    parser.add_argument('--chunk_size', type=int, help='Override chunk size for memory management')
     
     args = parser.parse_args()
 
@@ -209,6 +212,8 @@ def main():
         config['rendering']['image_size'] = args.image_size
     if args.num_surface_points:
         config['rendering']['num_surface_points'] = args.num_surface_points
+    if args.chunk_size:
+        config['rendering']['chunk_size'] = args.chunk_size
     
     BASE_MODELS_DIR = config['paths']['base_models_dir']
     OUTPUT_ROOT = config['paths']['output_root']

@@ -2,8 +2,8 @@
 
 # Paths configuration
 paths:
-  base_models_dir: "/volume/hot_storage/slurm_data/grei_lo/clutter6d/3d_models/"
-  output_root: "/volume/hot_storage/slurm_data/grei_lo/clutter6d/templates"
+  base_models_dir: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/3d_models/"
+  output_root: "/dss/dsstbyfs02/pn52ru/pn52ru-dss-0000/common/datasets/clutter6d/templates/"
 
 # Dataset paths (relative to base_models_dir)
 datasets:

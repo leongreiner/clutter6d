@@ -71,7 +71,7 @@ class ObjRenderer:
         if abs(max_dim - 1.0) > self.scale_tolerance:
             raise ValueError(f"Mesh is not normalized (max bbox dim {max_dim:.4f})")
 
-    def render(self, glb_path: str, output_dir: str, model_name: str, num_surface_points: int = 10000) -> None:
+    def render(self, glb_path: str, output_dir: str, model_name: str, num_surface_points: int = 10000, chunk_size: int = 14) -> None:
         if not glb_path.lower().endswith('.glb'):
             raise ValueError("Only GLB files are supported.")
         os.makedirs(output_dir, exist_ok=True)
@@ -98,22 +98,6 @@ class ObjRenderer:
             R, T = look_at_view_transform(eye=[pos.tolist()], at=[[0,0,0]], up=[[0,1,0]], device=self.device)
             R_list.append(R); T_list.append(T)
         R_all = torch.cat(R_list, 0); T_all = torch.cat(T_list, 0)
-        mesh_batch = mesh.extend(num_views)
-        cameras = PerspectiveCameras(
-            device=self.device,
-            R=R_all,
-            T=T_all,
-            focal_length=[[self.focal_length, self.focal_length]] * num_views,
-            principal_point=[self.principal_point] * num_views,
-            image_size=[[self.image_size, self.image_size]] * num_views,
-            in_ndc=False
-        )
-        rasterizer = MeshRasterizer(cameras=cameras, raster_settings=raster_settings)
-        shader = SoftPhongShader(device=self.device, cameras=cameras, lights=lights, blend_params=self.blend_params)
-        renderer = MeshRenderer(rasterizer=rasterizer, shader=shader)
-        torch.cuda.empty_cache()
-        render_output = renderer(mesh_batch)
-        templates = (render_output[..., :3].cpu().numpy() * 255).clip(0,255).astype(np.uint8)
         K = torch.tensor([
             [self.focal_length, 0.0, self.principal_point[0]],
             [0.0, self.focal_length, self.principal_point[1]],
@@ -122,9 +106,40 @@ class ObjRenderer:
         camk_batch = K.unsqueeze(0).repeat(num_views,1,1)
         extrinsics = torch.eye(4, device=self.device).unsqueeze(0).repeat(num_views,1,1)
         extrinsics[:, :3, :3] = R_all; extrinsics[:, :3, 3] = T_all
+
+        all_templates = []
+        
+        with torch.no_grad():
+            for start_idx in range(0, num_views, chunk_size):
+                end_idx = min(start_idx + chunk_size, num_views)
+                chunk_views = end_idx - start_idx
+                
+                R_chunk = R_all[start_idx:end_idx]
+                T_chunk = T_all[start_idx:end_idx]
+                
+                cameras = PerspectiveCameras(
+                    device=self.device,
+                    R=R_chunk,
+                    T=T_chunk,
+                    focal_length=[[self.focal_length, self.focal_length]] * chunk_views,
+                    principal_point=[self.principal_point] * chunk_views,
+                    image_size=[[self.image_size, self.image_size]] * chunk_views,
+                    in_ndc=False
+                )
+
+                rasterizer = MeshRasterizer(cameras=cameras, raster_settings=raster_settings)
+                shader = SoftPhongShader(device=self.device, cameras=cameras, lights=lights, blend_params=self.blend_params)
+                renderer = MeshRenderer(rasterizer=rasterizer, shader=shader)
+                
+                meshes = mesh.extend(chunk_views)
+                render_output = renderer(meshes)
+                chunk_templates = (render_output[..., :3].cpu().numpy() * 255).clip(0,255).astype(np.uint8)
+                all_templates.append(chunk_templates)
+                del render_output, meshes, renderer, rasterizer, shader, cameras
+                torch.cuda.empty_cache()
+        
+        templates = np.concatenate(all_templates, axis=0)
         camk_np = camk_batch.cpu().numpy(); extrinsics_np = extrinsics.cpu().numpy()
-        del render_output, mesh_batch, renderer, rasterizer, shader
-        torch.cuda.empty_cache()
         save_to_hdf5(templates, camk_np, extrinsics_np, surface_points, obj_id, output_dir, model_name, self.image_size)
 
 
@@ -136,6 +151,7 @@ def main():
     parser.add_argument('--subdivisions', type=int, default=1)
     parser.add_argument('--image_size', type=int, default=700)
     parser.add_argument('--num_surface_points', type=int, default=10000, help='Number of surface points to sample from the CAD model')
+    parser.add_argument('--chunk_size', type=int, default=14, help='Number of views to render simultaneously (for memory management)')
     args = parser.parse_args()
     if not os.path.isfile(args.glb_path):
         raise FileNotFoundError(f"GLB file not found: {args.glb_path}")
@@ -146,7 +162,7 @@ def main():
     )
     model_name = os.path.splitext(os.path.basename(args.glb_path))[0]
     output_dir = args.output_root
-    renderer.render(args.glb_path, output_dir, model_name, args.num_surface_points)
+    renderer.render(args.glb_path, output_dir, model_name, args.num_surface_points, args.chunk_size)
     print("Render complete.")
 
 if __name__ == '__main__':
