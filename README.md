@@ -1,6 +1,6 @@
 # Clutter6D: Synthetic 6D Object Pose Estimation Dataset Generator
 
-A comprehensive pipeline for generating synthetic datasets for 6D object pose estimation and segmentation using BlenderProc and PyTorch3D.
+A comprehensive pipeline for generating synthetic datasets for 6D object pose estimation, segmentation and detection using BlenderProc and PyTorch3D.
 
 ## Overview
 
