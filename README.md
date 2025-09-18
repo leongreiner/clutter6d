@@ -68,15 +68,6 @@ conda env create -f environment.yml
 conda activate clutter6d
 ```
 
-3. Install additional dependencies:
-```bash
-# Install PyTorch3D (for template generation)
-pip install pytorch3d
-
-# Install other required packages
-pip install h5py pillow
-```
-
 ## Usage
 
 ### 1. Query Image Generation
