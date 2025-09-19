@@ -13,6 +13,12 @@ from .point_sampler import (
     sample_surface_points
 )
 
+from .helpers import (
+    load_config,
+    check_render_content,
+    extract_obj_id_from_glb_filename
+)
+
 __all__ = [
     # Camera utilities
     'setup_camera_intrinsics',
@@ -24,5 +30,10 @@ __all__ = [
     'extract_obj_id_from_filename',
     
     # Point sampling utilities
-    'sample_surface_points'
+    'sample_surface_points',
+    
+    # Helper utilities
+    'load_config',
+    'check_render_content',
+    'extract_obj_id_from_glb_filename'
 ]
