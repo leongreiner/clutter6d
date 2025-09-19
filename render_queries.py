@@ -18,7 +18,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-from query_generation import (
+from query_generation.utils import (
     create_trunc_poisson_pmf,
     load_random_models, load_model_paths,
     sample_poses,
